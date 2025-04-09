@@ -22,3 +22,14 @@ struct Keybinding {
     var command: (VimCapableTextView) -> Void
 }
 
+struct LineMappings {
+    var lines: [String]
+    var lineStarts: [Int]
+    var globalPosition: Int
+    var localPosition: Int
+    var lineIdx: Int
+    
+    func currentLine() -> String {
+        return lines[lineIdx]
+    }
+}

@@ -16,6 +16,24 @@ func _setCursorPosition(_ vimTextView: VimCapableTextView, position: Int) {
     vimTextView.setSelectedRange(range)
 }
 
+func _getLinesMapping(_ vimTextView: VimCapableTextView) -> LineMappings {
+    var lineStarts: [Int] = [0]
+    let textLines = vimTextView.string.split(separator: "\n", omittingEmptySubsequences: false)
+
+    for (index, char) in vimTextView.string.enumerated() {
+        if char == "\n" {
+            lineStarts.append(index+1)
+        }
+    }
+    
+    let position = _getCursorPosition(vimTextView)
+    let lineIdx = (lineStarts.firstIndex(where: { $0 > position }) ?? lineStarts.count) - 1
+    let positionFromStart = position - lineStarts[lineIdx]
+    print("Position: ", position, "; lineIdx: ", lineIdx, "; lineStart: ", lineStarts[lineIdx], "; positionFromStart: ", positionFromStart)
+
+    return LineMappings(lines: textLines.map({String($0)}), lineStarts: lineStarts, globalPosition: position, localPosition: positionFromStart, lineIdx: lineIdx)
+}
+
 
 func vimEnterNormalMode(_ vimTextView: VimCapableTextView) -> Void {
     vimTextView.mode = .Normal
@@ -47,49 +65,86 @@ func vimMoveRight(_ vimTextView: VimCapableTextView) -> Void {
 }
 
 func vimMoveUp(_ vimTextView: VimCapableTextView) -> Void {
-    var lineStarts: [Int] = [0]
-    let textLines = vimTextView.string.split(separator: "\n", omittingEmptySubsequences: false)
-
-    for (index, char) in vimTextView.string.enumerated() {
-        if char == "\n" {
-            lineStarts.append(index+1)
-        }
-    }
-    let position = _getCursorPosition(vimTextView)
-    let lineIdx = (lineStarts.firstIndex(where: { $0 > position }) ?? lineStarts.count) - 1
-
-    print("Current line: \(lineIdx) (\(textLines[lineIdx]))")
+    let mapping = _getLinesMapping(vimTextView)
     
-    let positionFromStart = position - lineStarts[lineIdx]
-    if lineIdx - 1 >= 0 {
-        if textLines[lineIdx-1].count > positionFromStart {
-            _setCursorPosition(vimTextView, position: lineStarts[lineIdx - 1] + positionFromStart)
+    if mapping.lineIdx - 1 >= 0 {
+        if mapping.lines[mapping.lineIdx-1].count > mapping.localPosition {
+            _setCursorPosition(vimTextView, position: mapping.lineStarts[mapping.lineIdx - 1] + mapping.localPosition)
         } else {
-            _setCursorPosition(vimTextView, position: lineStarts[lineIdx - 1] + textLines[lineIdx - 1].count)
+            _setCursorPosition(vimTextView, position: mapping.lineStarts[mapping.lineIdx - 1] + mapping.lines[mapping.lineIdx - 1].count)
         }
     }
 }
 
 func vimMoveDown(_ vimTextView: VimCapableTextView) -> Void {
-    var lineStarts: [Int] = [0]
-    let textLines = vimTextView.string.split(separator: "\n", omittingEmptySubsequences: false)
-
-    for (index, char) in vimTextView.string.enumerated() {
-        if char == "\n" {
-            lineStarts.append(index+1)
-        }
-    }
-    let position = _getCursorPosition(vimTextView)
-    let lineIdx = (lineStarts.firstIndex(where: { $0 > position }) ?? lineStarts.count) - 1
-
-    print("Current line: \(lineIdx) (\(textLines[lineIdx]))")
+    let mapping = _getLinesMapping(vimTextView)
     
-    let positionFromStart = position - lineStarts[lineIdx]
-    if lineIdx + 1 < textLines.count {
-        if textLines[lineIdx+1].count > positionFromStart {
-            _setCursorPosition(vimTextView, position: lineStarts[lineIdx + 1] + positionFromStart)
+    if mapping.lineIdx + 1 < mapping.lines.count {
+        if mapping.lines[mapping.lineIdx+1].count > mapping.localPosition {
+            _setCursorPosition(vimTextView, position: mapping.lineStarts[mapping.lineIdx + 1] + mapping.localPosition)
         } else {
-            _setCursorPosition(vimTextView, position: lineStarts[lineIdx + 1] + textLines[lineIdx + 1].count)
+            _setCursorPosition(vimTextView, position: mapping.lineStarts[mapping.lineIdx + 1] + mapping.lines[mapping.lineIdx - 1].count)
         }
     }
+}
+
+func vimJumpToStartOfNextWord(_ vimTextView: VimCapableTextView) -> Void {
+    let mapping = _getLinesMapping(vimTextView)
+    let line = mapping.currentLine()
+    let idx = line.index(line.startIndex, offsetBy: mapping.localPosition)
+    let startOfNextWord = line[idx...].firstIndex(of: " ")
+    
+    var targetPosition = mapping.lineStarts[mapping.lineIdx]
+    if startOfNextWord != nil {
+        targetPosition += line.distance(from: line.startIndex, to: startOfNextWord!) + 1
+    } else {
+        if mapping.lineIdx + 1 >= mapping.lines.count {
+            return
+        }
+        targetPosition = mapping.lineStarts[mapping.lineIdx + 1]
+    }
+    
+    _setCursorPosition(vimTextView, position: targetPosition)
+}
+
+func vimJumpToStartOfPrevWord(_ vimTextView: VimCapableTextView) -> Void {
+    let mapping = _getLinesMapping(vimTextView)
+    let line = mapping.currentLine()
+    print(mapping)
+    
+    if mapping.localPosition - 2 < 0 {
+        if mapping.localPosition == 0 {
+            if mapping.lineIdx - 1 >= 0 {
+                let lastWordPrevLine = mapping.lines[mapping.lineIdx - 1].lastIndex(of: " ")
+                if lastWordPrevLine == nil {
+                    _setCursorPosition(vimTextView, position: mapping.lineStarts[mapping.lineIdx - 1])
+                    return
+                }
+                let targetPosition = mapping.lineStarts[mapping.lineIdx - 1] + mapping.lines[mapping.lineIdx - 1].distance(from: mapping.lines[mapping.lineIdx - 1].startIndex, to: lastWordPrevLine!) + 1
+                _setCursorPosition(vimTextView, position: targetPosition)
+            }
+            return
+        } else {
+            _setCursorPosition(vimTextView, position: mapping.lineStarts[mapping.lineIdx])
+            return
+        }
+    }
+    
+    let idx = line.index(line.startIndex, offsetBy: mapping.localPosition-2)
+    let startOfPrevWord = line[line.startIndex...idx].lastIndex(of: " ")
+    
+    var targetPosition = mapping.lineStarts[mapping.lineIdx]
+    if startOfPrevWord != nil {
+        targetPosition += line.distance(from: line.startIndex, to: startOfPrevWord!) + 1
+    } else {
+        if _getCursorPosition(vimTextView) > mapping.lineStarts[mapping.lineIdx] {
+            targetPosition = mapping.lineStarts[mapping.lineIdx]
+        }
+        else if mapping.lineIdx - 1 >= 0 {
+            targetPosition = mapping.lineStarts[mapping.lineIdx - 1]
+        } else {
+            return
+        }
+    }
+    _setCursorPosition(vimTextView, position: targetPosition)
 }

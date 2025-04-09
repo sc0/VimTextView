@@ -28,4 +28,7 @@ func setupDefaultKeybindings(_ keybindings: inout Keybindings) {
     keybindings.add(keybind: Keybinding(mode: VimMode.Normal, binding: "l", command: vimMoveRight))
     keybindings.add(keybind: Keybinding(mode: VimMode.Normal, binding: "j", command: vimMoveDown))
     keybindings.add(keybind: Keybinding(mode: VimMode.Normal, binding: "k", command: vimMoveUp))
+    
+    keybindings.add(keybind: Keybinding(mode: VimMode.Normal, binding: "w", command: vimJumpToStartOfNextWord))
+    keybindings.add(keybind: Keybinding(mode: VimMode.Normal, binding: "b", command: vimJumpToStartOfPrevWord))
 }
