@@ -29,7 +29,6 @@ func _getLinesMapping(_ vimTextView: VimCapableTextView) -> LineMappings {
     let position = _getCursorPosition(vimTextView)
     let lineIdx = (lineStarts.firstIndex(where: { $0 > position }) ?? lineStarts.count) - 1
     let positionFromStart = position - lineStarts[lineIdx]
-    print("Position: ", position, "; lineIdx: ", lineIdx, "; lineStart: ", lineStarts[lineIdx], "; positionFromStart: ", positionFromStart)
 
     return LineMappings(lines: textLines.map({String($0)}), lineStarts: lineStarts, globalPosition: position, localPosition: positionFromStart, lineIdx: lineIdx)
 }
@@ -110,7 +109,6 @@ func vimJumpToStartOfNextWord(_ vimTextView: VimCapableTextView) -> Void {
 func vimJumpToStartOfPrevWord(_ vimTextView: VimCapableTextView) -> Void {
     let mapping = _getLinesMapping(vimTextView)
     let line = mapping.currentLine()
-    print(mapping)
     
     if mapping.localPosition - 2 < 0 {
         if mapping.localPosition == 0 {

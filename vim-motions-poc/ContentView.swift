@@ -11,7 +11,9 @@ struct ContentView: View {
                 Text("h j k l:   Navigation")
                 Text("i:   Enter insert mode")
                 Text("a:   Enter insert mode after cursor")
-                
+                Text("w:   Jump to start of next word")
+                Text("b:   Jump to start of prev word")
+
                 Text("Insert mode").bold().padding(EdgeInsets(top: 5, leading: 0, bottom: 5, trailing: 0))
                 Text("Escape:   Enter normal mode")
             }
