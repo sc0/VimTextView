@@ -5,16 +5,13 @@
 //  Created by Kacper Debowski on 08/04/2025.
 //
 class Keybindings {
-    var keybinds: [VimMode: [KeybindingType: [KeyCode: (VimCapableTextView) -> Void]]] = [:]
+    var simpleKeybinds: [VimMode: [Keystroke: (VimCapableTextView) -> Void]] = [:]
     
     func add(keybind: Keybinding) {
-        let parsedKeybind = KeyCode.parseFullKeybind(keybind.binding)
-        let type: KeybindingType = parsedKeybind.count > 1 ? .Complex : .Simple
+        let keystroke = Keystroke.parse(keybind.binding)
+        let type: KeybindingType = .Simple
         
-        if type == .Complex {
-           fatalError("Unsupported: complex keybinds")
-        }
-        keybinds[keybind.mode, default: [:]][type, default: [:]][parsedKeybind[0]] = keybind.command
+        simpleKeybinds[keybind.mode, default: [:]][keystroke] = keybind.command
     }
 }
 
@@ -31,4 +28,7 @@ func setupDefaultKeybindings(_ keybindings: inout Keybindings) {
     
     keybindings.add(keybind: Keybinding(mode: VimMode.Normal, binding: "w", command: vimJumpToStartOfNextWord))
     keybindings.add(keybind: Keybinding(mode: VimMode.Normal, binding: "b", command: vimJumpToStartOfPrevWord))
+    
+    keybindings.add(keybind: Keybinding(mode: VimMode.Normal, binding: "<S-v>", command: vimShiftV))
+    keybindings.add(keybind: Keybinding(mode: VimMode.Normal, binding: "<C-v>", command: vimCtrlV))
 }

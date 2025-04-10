@@ -74,8 +74,19 @@ class VimCapableTextView: NSTextView {
     }
     
     override func keyDown(with event: NSEvent) {
-        if keybinds.keybinds[mode]?[KeybindingType.Simple]?[KeyCode(rawValue: event.keyCode)!] != nil {
-            keybinds.keybinds[mode]?[KeybindingType.Simple]?[KeyCode(rawValue: event.keyCode)!]!(self)
+        var modifiersPressed: UInt8 = 0
+        if event.modifierFlags.intersection(.deviceIndependentFlagsMask).contains(.shift) {
+            modifiersPressed |= KeyModifiers.shift.rawValue
+        }
+        if event.modifierFlags.intersection(.deviceIndependentFlagsMask).contains(.control) {
+            modifiersPressed |= KeyModifiers.ctrl.rawValue
+        }
+        if event.modifierFlags.intersection(.deviceIndependentFlagsMask).contains(.option) {
+            modifiersPressed |= KeyModifiers.option.rawValue
+        }
+
+        if keybinds.simpleKeybinds[mode]?[Keystroke(key: KeyCode(rawValue: event.keyCode)!, modifiers: modifiersPressed)] != nil {
+            keybinds.simpleKeybinds[mode]?[Keystroke(key: KeyCode(rawValue: event.keyCode)!, modifiers: modifiersPressed)]!(self)
         }
         else {
             if mode == .Insert {

@@ -146,3 +146,11 @@ func vimJumpToStartOfPrevWord(_ vimTextView: VimCapableTextView) -> Void {
     }
     _setCursorPosition(vimTextView, position: targetPosition)
 }
+
+func vimShiftV(_ vimTextView: VimCapableTextView) {
+   print("Shift V")
+}
+
+func vimCtrlV(_ vimTextView: VimCapableTextView) {
+    print("Ctrl V")
+}
